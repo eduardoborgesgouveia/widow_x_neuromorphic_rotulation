@@ -6,7 +6,8 @@ from openAEDAT import aedatUtils
 def main():
 
     #Path to .aedat file
-    path = 'WidowX_controll_dataset/Sem fundo/Cup.aedat'
+    #path = 'Lapiseira.aedat'
+    path = 'WidowX_controll_dataset/Com fundo/Cup.aedat'
     #loading the values of the file
     #t is the time vector
     # x and y is the coordinates of the events
@@ -14,7 +15,7 @@ def main():
     t, x, y, p = aedatUtils.loadaerdat(path)
 
     #time window of the frame (merging events)
-    tI=50000 #50 ms
+    tI=200000 #50 ms
 
 
     totalImages = []
