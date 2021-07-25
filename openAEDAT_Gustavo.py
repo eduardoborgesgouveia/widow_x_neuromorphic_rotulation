@@ -3,7 +3,7 @@ import os
 import sys
 import struct
 import numpy as np
-
+import math
 
 class aedatUtils:
 
@@ -98,12 +98,8 @@ class aedatUtils:
     def matrix_active(x, y, pol,filtered=None):
     
         matrix = np.zeros([128, 128]) # Cria uma matriz de zeros 128x128 onde serão inseridos os eventos
-        s = np.zeros([128, 128])
-        r = 2
-        
-        
         pol = (pol - 0.5) # Os eventos no array de Polaridade passam a ser -0.5 ou 0.5
-        count = 0
+        
         if(len(x) == len(y)): # Verifica se o tamanho dos arrays são iguais   
             for i in range(len(x)):
                 val = 0
@@ -115,52 +111,84 @@ class aedatUtils:
                 elif filtered == True:
                     val = 1
                 matrix[x[i], y[i]] += val # insere os eventos dentro da matriz de zeros
-
-                #if s[x[i]-r : x[i]+r, y[i]-r : y[i]+r].all() >= s[x[i], y[i]]:    
-                    #s[x[i]-r : x[i]+r, y[i]-r : y[i]+r] = s[x[i]-r : x[i]+r, y[i]-r : y[i]+r] - 1
-
-                for c in np.linspace(x[i]-r, x[i]+r, 2*r + 1, dtype=int):
-                    #print("x -> ",np.linspace(x[i]-r, x[i]+r, 2*r + 1, dtype=int))
-                    for u in np.linspace(y[i]-r, y[i]+r, 2*r + 1, dtype=int):
-                        #print("y -> ", np.linspace(y[i]-r, y[i]+r, 2*r + 1, dtype=int))
-                        count = count + 1
-                        print(count)
-                        if c >= 0 and c< 128 and u>=0 and u<128:
-                            if s[c, u] >= s[x[i], y[i]] and s[c,u] >= 1:
-                                s[c, u] = s[c , u] - 1
-                s[x[i] , y[i]] = (2*r + 1)**2
-
-            maxValue = s.max()
-            s = s/maxValue
-            s[s <= 0.5] = 0
-            #matrix[np.logical_and(matrix > 0.1, matrix <= 0.3)] = 0.1
-            s[s >= 0.5] = 1
-            s = (s * 255) # Normaliza a matriz para 8bits -> 0 - 255
-
         else:
             print("error x,y missmatch")    
 
-        # if filtered:
-        #     maxValue = matrix.max()
-        #     matrix = matrix/maxValue
-        #     #matrix[matrix <= 0.5] = 0
-        #     #matrix[np.logical_and(matrix > 0.1, matrix <= 0.3)] = 0.1
-        #     #matrix[matrix >= 0.5] = 1
-        #     matrix = (matrix * 255) # Normaliza a matriz para 8bits -> 0 - 255
-        # else:
-        #     idx = 0
-        #     limiar = 0.5
-        #     for i in matrix: # Limita os eventos em dentro do limiar
-        #         for j, v in enumerate(i):
-        #             if v > limiar:
-        #                 matrix[idx][j] = limiar
-        #             if v < (limiar-1):
-        #                 matrix[idx][j] = (limiar-1)
-        #         idx += 1
-        #     if limiar != 1:
-        #         matrix = (matrix * 255) + 127.5 # Normaliza a matriz para 8bits -> 0 - 255
+        if filtered:
+            maxValue = matrix.max()
+            matrix = matrix/maxValue
+            #matrix[matrix <= 0.5] = 0
+            #matrix[np.logical_and(matrix > 0.1, matrix <= 0.3)] = 0.1
+            #matrix[matrix >= 0.5] = 1
+            matrix = (matrix * 255) # Normaliza a matriz para 8bits -> 0 - 255
+        else:
+            idx = 0
+            limiar = 0.5
+            for i in matrix: # Limita os eventos em dentro do limiar
+                for j, v in enumerate(i):
+                    if v > limiar:
+                        matrix[idx][j] = limiar
+                    if v < (limiar-1):
+                        matrix[idx][j] = (limiar-1)
+                idx += 1
+            if limiar != 1:
+                matrix = (matrix * 255) + 127.5 # Normaliza a matriz para 8bits -> 0 - 255
             
-        return s
+        return matrix
+
+    def fila(t, x, y, p):  
+    
+        tore=0
+        T= 5000000
+        T_linha=150
+    
+        n = 4
+        #declaração das matrizes P+ e P-
+        TORE_positivo = np.full((128,128,n),[0,0,0,0],list)
+        TORE_negativo = np.full((128,128,n),[0,0,0,0],list)
+        TORE_fp = np.full((128,128,n),[0,0,0,0],list)
+        TORE_fn = np.full((128,128,n),[0,0,0,0],list)
+        
+        #print('X: '+str(x))
+        #print('Y: '+str(y))
+
+        
+
+        for i in range(len(t)):
+            tore=0
+            if p[i]==1:
+                #k=len(TORE_positivo[x[i],y[i]])
+                #k=k-1
+                aux = np.delete(TORE_positivo[x[i],y[i]],0)
+                aux = np.append(aux,t[i])
+                TORE_positivo[x[i],y[i]] = aux
+                for num in range(n):
+                    tore = max(min(math.log(t[i] - TORE_positivo[x[i],y[i]][num] +1),T),math.log(T_linha))
+                    aux_t = np.delete(TORE_fp[x[i],y[i]],0)
+                    aux_t = np.append(aux_t,tore)
+                TORE_fp[x[i],y[i]] = aux_t
+            
+                    
+            elif  p[i]==0:
+                    #l=len(TORE_negativo[x[i],y[i]])
+                    aux = np.delete(TORE_negativo[x[i],y[i]],0)
+                    aux = np.append(aux,t[i])
+                    TORE_negativo[x[i],y[i]] = aux
+                    for num in range(n):
+                        tore += max(min(math.log(t[i] - TORE_negativo[x[i],y[i]][num] +1),T),math.log(T_linha))
+                        aux_t = np.delete(TORE_fn[x[i],y[i]],0)
+                        aux_t = np.append(aux_t,tore)
+                    TORE_fn[x[i],y[i]] = aux_t
+                
+            
+        
+        #print(k)
+        print('P=1 -> '+ str(TORE_positivo[9,0]))
+        print('P=0 -> '+ str(TORE_negativo[9,0]))
+        print('Tore p ->' +str(TORE_fp[9,0]))
+        print('Tore n ->' +str(TORE_fn[9,0]))
+
+        return TORE_fp,TORE_fn
 
     def getFrameTimeBased(timeArray, polArray, xPosArray, yPosArray,timeStamp, Ti):
         aux = 0
@@ -177,20 +205,48 @@ class aedatUtils:
         totalImages = []
         i, aux = 0, 0
         images = []
+        totalTore = []
+        tores = []
+        totalImages_tore = []
         
-        while (i + timeStamp) < abs(timeArray[351278]):
+        images_tore = []
+        
+        while (i + timeStamp) < abs(timeArray[-1]):
             t2 = timeArray[(timeArray > i) & (timeArray <= i + timeStamp)]
             x2 = xPosArray[aux : aux + len(t2)]
             y2 = yPosArray[aux : aux + len(t2)]
             p2 = polArray[aux : aux + len(t2)]
             aux += len(t2)
+            aux_t_tore = t2[0]
+            t_tore = t2 - aux_t_tore
+            # print(t_tore)
+            tore_p,tore_n = aedatUtils.fila(t_tore,x2,y2,p2)
             img = aedatUtils.matrix_active(x2, y2, p2,filtered)
             rotacao = aedatUtils.rotateMatrix(img)
-            images.append(img)	
+            images.append(img)
+            tores.append([tore_p,tore_n])	
             i += timeStamp
+        totalTore.extend(tores)
+        totalTore = np.array(totalTore)
         totalImages.extend(images)
         totalImages = np.array(totalImages)
-        return totalImages
+
+        for tore in tores:
+            matrix = np.zeros([128, 128])
+            for x in range(128):            
+                for y in range(128):                 
+                    if(tore[0][x,y,-1] > 0):
+                        matrix[x,y] = tore[0][x,y,-1]
+                    elif(tore[1][x,y,-1] > 0):
+                        matrix[x,y] = tore[1][x,y,-1]
+            maxValue = matrix.max()
+            matrix = matrix/maxValue
+            matrix = (matrix * 255)+127.5 # Normaliza a matriz para 8bits -> 0 - 255
+            matrix = aedatUtils.rotateMatrix(matrix)
+            images_tore.append(matrix)
+        totalImages_tore.extend(images_tore)
+        totalImages_tore = np.array(totalImages_tore)
+        return totalImages_tore
 
 
     def rotateMatrix(mat): 
