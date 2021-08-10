@@ -2,7 +2,7 @@ general:
     time_limit: 20.8
     path_to_save: WidowX_controll_dataset/
     percentage_train: 0.8
-    integration_time: 200000
+    integration_time: 100000
 time_surface:
     - SITS
     - Integral
@@ -29,20 +29,20 @@ class_parameters:
         height: 27
         x: 30
         y: 100
-        z: 0 
+        z: 0
         temposEtapas: [0,2,4,6,8.2,10.3,12.3,14.4,20.8,22,23,24.6]
     1:
         width: 40
         height: 55
         x: 40
-        y: 70 
+        y: 70
         z: 0
         temposEtapas: [0,2,4,6,8.2,10.4,12.4,14.4,20.8,22,23,24.6]
     2:
         width: 60
-        height: 27 
+        height: 27
         x: 30
-        y: 100 
+        y: 100
         z: 0
         temposEtapas: [0,2,4,6,8.2,10.3,12.3,14.4,20.8,22,23,24.6]
     3:
@@ -54,7 +54,7 @@ class_parameters:
         temposEtapas: [0,2,4,6,8.2,10.3,12.25,14.4,20.8,22,23,24.6]
     4:
         width: 65
-        height: 27 
+        height: 27
         x: 20
         y: 100
         z: 0
@@ -68,7 +68,7 @@ class_parameters:
         temposEtapas: [0,2,4,5.8,8.2,10.3,12.25,14.4,20.8,22,23,24.6]
     6:
         width: 30
-        height: 30 
+        height: 30
         x: 43
         y: 90
         z: 0

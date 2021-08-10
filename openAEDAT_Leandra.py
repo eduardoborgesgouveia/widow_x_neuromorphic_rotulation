@@ -31,8 +31,8 @@ class aedatUtils:
             length = statinfo.st_size # Define 'length' = Tamanho do arquivo
 
         print("file size", length)
-        
-        # Verifica a versão do Python. 
+
+        # Verifica a versão do Python.
         if sys.version[0] == '3':
             value = 35 # Se for >= 3 le o cabeçalho em binário.
         else:
@@ -43,32 +43,32 @@ class aedatUtils:
         while lt and lt[0] == value:
             p += len(lt)
             k += 1
-            lt = aerdatafh.readline() 
+            lt = aerdatafh.readline()
             if debug >= 2:
                 print(str(lt))
             continue
-        
+
         # variables to parse
         timestamps = []
         xaddr = []
         yaddr = []
         pol = []
-        
+
         # read data-part of file
         aerdatafh.seek(p)
         s = aerdatafh.read(aeLen)
         p += aeLen
-        
-        print(xmask, xshift, ymask, yshift, pmask, pshift)    
+
+        print(xmask, xshift, ymask, yshift, pmask, pshift)
         while p < length:
             addr, ts = struct.unpack(readMode, s)
             # parse event type
-            if(camera == 'DVS128'):     
+            if(camera == 'DVS128'):
                 x_addr = (addr & xmask) >> xshift # Endereço x -> bits de 1-7
                 y_addr = (addr & ymask) >> yshift # Endereço y -> bits de 8-14
-                a_pol = (addr & pmask) >> pshift  # Endereço polaridade -> bit 0            
-                if debug >= 3: 
-                    print("ts->", ts) 
+                a_pol = (addr & pmask) >> pshift  # Endereço polaridade -> bit 0
+                if debug >= 3:
+                    print("ts->", ts)
                     print("x-> ", x_addr)
                     print("y-> ", y_addr)
                     print("pol->", a_pol)
@@ -77,10 +77,10 @@ class aedatUtils:
                 xaddr.append(x_addr)
                 yaddr.append(y_addr)
                 pol.append(a_pol)
-                    
+
             aerdatafh.seek(p)
             s = aerdatafh.read(aeLen)
-            p += aeLen        
+            p += aeLen
 
         if debug > 0:
             try:
@@ -96,15 +96,15 @@ class aedatUtils:
 
 
     def matrix_active(x, y, pol,filtered=None):
-    
+
         matrix = np.zeros([128, 128]) # Cria uma matriz de zeros 128x128 onde serão inseridos os eventos
         s = np.zeros([128, 128])
         r = 2
-        
-        
+
+
         pol = (pol - 0.5) # Os eventos no array de Polaridade passam a ser -0.5 ou 0.5
         count = 0
-        if(len(x) == len(y)): # Verifica se o tamanho dos arrays são iguais   
+        if(len(x) == len(y)): # Verifica se o tamanho dos arrays são iguais
             for i in range(len(x)):
                 val = 0
                 #se a flag do filtro for true. Os eventos serão somados
@@ -116,7 +116,7 @@ class aedatUtils:
                     val = 1
                 matrix[x[i], y[i]] += val # insere os eventos dentro da matriz de zeros
 
-                #if s[x[i]-r : x[i]+r, y[i]-r : y[i]+r].all() >= s[x[i], y[i]]:    
+                #if s[x[i]-r : x[i]+r, y[i]-r : y[i]+r].all() >= s[x[i], y[i]]:
                     #s[x[i]-r : x[i]+r, y[i]-r : y[i]+r] = s[x[i]-r : x[i]+r, y[i]-r : y[i]+r] - 1
 
                 for c in np.linspace(x[i]-r, x[i]+r, 2*r + 1, dtype=int):
@@ -138,7 +138,7 @@ class aedatUtils:
             s = (s * 255) # Normaliza a matriz para 8bits -> 0 - 255
 
         else:
-            print("error x,y missmatch")    
+            print("error x,y missmatch")
 
         # if filtered:
         #     maxValue = matrix.max()
@@ -159,7 +159,7 @@ class aedatUtils:
         #         idx += 1
         #     if limiar != 1:
         #         matrix = (matrix * 255) + 127.5 # Normaliza a matriz para 8bits -> 0 - 255
-            
+
         return s
 
     def getFrameTimeBased(timeArray, polArray, xPosArray, yPosArray,timeStamp, Ti):
@@ -177,8 +177,8 @@ class aedatUtils:
         totalImages = []
         i, aux = 0, 0
         images = []
-        
-        while (i + timeStamp) < abs(timeArray[351278]):
+
+        while (i + timeStamp) < abs(timeArray[-1]):
             t2 = timeArray[(timeArray > i) & (timeArray <= i + timeStamp)]
             x2 = xPosArray[aux : aux + len(t2)]
             y2 = yPosArray[aux : aux + len(t2)]
@@ -186,41 +186,35 @@ class aedatUtils:
             aux += len(t2)
             img = aedatUtils.matrix_active(x2, y2, p2,filtered)
             rotacao = aedatUtils.rotateMatrix(img)
-            images.append(img)	
+            images.append(img)
             i += timeStamp
         totalImages.extend(images)
         totalImages = np.array(totalImages)
         return totalImages
 
 
-    def rotateMatrix(mat): 
+    def rotateMatrix(mat):
         N = len(mat)
-        # Consider all squares one by one 
-        for x in range(0, int(N/2)): 
-            
-            # Consider elements in group    
-            # of 4 in current square 
-            for y in range(x, N-x-1): 
-                
-                # store current cell in temp variable 
-                temp = mat[x][y] 
-    
-                # move values from right to top 
-                mat[x][y] = mat[y][N-1-x] 
-    
-                # move values from bottom to right 
-                mat[y][N-1-x] = mat[N-1-x][N-1-y] 
-    
-                # move values from left to bottom 
-                mat[N-1-x][N-1-y] = mat[N-1-y][x] 
-    
-                # assign temp to left 
-                mat[N-1-y][x] = temp 
+        # Consider all squares one by one
+        for x in range(0, int(N/2)):
+
+            # Consider elements in group
+            # of 4 in current square
+            for y in range(x, N-x-1):
+
+                # store current cell in temp variable
+                temp = mat[x][y]
+
+                # move values from right to top
+                mat[x][y] = mat[y][N-1-x]
+
+                # move values from bottom to right
+                mat[y][N-1-x] = mat[N-1-x][N-1-y]
+
+                # move values from left to bottom
+                mat[N-1-x][N-1-y] = mat[N-1-y][x]
+
+                # assign temp to left
+                mat[N-1-y][x] = temp
 
         return mat
-    
-
-    
-
-   
-    
