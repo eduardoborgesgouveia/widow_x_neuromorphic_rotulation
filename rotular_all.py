@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import os
 import glob
+import cv2 as cv
 import matplotlib.pyplot as plt
 from openAEDAT import aedatUtils
 from openAEDAT_Leandra import aedatUtils as aedatUtilsLeandra
@@ -22,13 +23,13 @@ def main():
             tempoGravacao = tempoFrame*len(imagens)
             bb = getBoudingBox(param['class_parameters'][index],tempoFrame,tempoGravacao,param['general']['time_limit'])
             saveInfos(param['general'],bb,imagens,classe,index,tipoSuperficie)
-    
 
 
 
 
 
-        
+
+
 def getImages(parametrosGerais, path, tipoSuperficie):
     tI = parametrosGerais['integration_time']
     #loading the values of the file
@@ -75,7 +76,7 @@ def saveInfos(parametros_gerais, boundingBox, totalImages,nomeClasse,indexClasse
             os.makedirs(path + tipoSuperficie + "/" + tipo + "/labels/")
         if(not os.path.isdir(path + tipoSuperficie + "/" + tipo + "/images/")):
             os.makedirs(path + tipoSuperficie + "/" + tipo + "/images/")
-        #cv.imwrite(path + tipoSuperficie + "/" + tipo + "/images/" + nomeClasse + "_"  + str(i) + ".png",imagem)
+        cv.imwrite(path + tipoSuperficie + "/" + tipo + "/images/" + nomeClasse + "_"  + str(i) + ".png",imagem)
         f= open(path + tipoSuperficie + "/" + tipo + "/labels/" + nomeClasse + "_"  + str(i) + ".txt","w")
         f.write(stringToSave)
         f.close()
